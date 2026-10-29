@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#176b50">
+  <meta name="description" content="Track calories, protein, meals, reminders and weight-gain progress.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>GainWell — Calorie Tracker</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18231f;background:#f5f7f5;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer}
+    .top{background:#176b50;color:white;padding:22px max(16px,calc((100vw - 1050px)/2));}
+    .top-inner{max-width:1050px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{font-size:1.25rem;font-weight:800;letter-spacing:-.03em}.brand span{color:#b8f1d3}
+    .tag{font-size:.82rem;opacity:.88;margin-top:4px}.wrap{max-width:1050px;margin:22px auto;padding:0 16px 48px}
+    .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+    .card{background:white;border:1px solid #e1e8e3;border-radius:18px;padding:18px;box-shadow:0 3px 14px #183c2a08;min-width:0}
+    .span-8{grid-column:span 8}.span-4{grid-column:span 4}.span-6{grid-column:span 6}.span-12{grid-column:span 12}
+    h2{font-size:1.05rem;margin:0 0 14px;letter-spacing:-.02em}h3{font-size:.96rem;margin:0 0 8px}
+    .muted{color:#68776f;font-size:.86rem}.small{font-size:.78rem;color:#68776f}.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .metric{background:#f3f8f4;border-radius:14px;padding:14px}.metric strong{display:block;font-size:1.55rem;letter-spacing:-.04em;margin:5px 0}
+    .bar{height:8px;background:#dfe8e1;border-radius:20px;overflow:hidden}.bar>i{display:block;height:100%;background:#22966a;width:0%;transition:width .2s}
+    .bar.blue>i{background:#3979c7}.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}.grow{flex:1;min-width:0}
+    label{display:block;font-size:.84rem;font-weight:650;margin-bottom:6px}input,select{width:100%;padding:11px 12px;border:1px solid #d5dfd8;border-radius:11px;background:white;color:#18231f;min-width:0}
+    input:focus,select:focus{outline:2px solid #a7ddc0;border-color:#22966a}
+    .formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{min-width:0}.full{grid-column:1/-1}
+    .btn{border:0;background:#176b50;color:white;font-weight:700;padding:11px 14px;border-radius:11px}.btn:hover{background:#10563f}
+    .btn.secondary{background:#e8f3ec;color:#176b50}.btn.outline{background:white;border:1px solid #d5dfd8;color:#24372d}.btn.danger{background:#fff0ed;color:#a63b2a}
+    .btn:disabled{opacity:.45;cursor:not-allowed}.searchrow{display:flex;gap:8px}.searchrow input{flex:1}
+    .food-results{display:grid;gap:8px;margin-top:10px;max-height:260px;overflow:auto}
+    .food-option{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:1px solid #e2e9e3;background:#fff;border-radius:12px;padding:10px 12px;color:inherit}
+    .food-option:hover{border-color:#75b99a;background:#f7fbf8}.food-option strong{font-size:.9rem;display:block}.food-option small{color:#68776f}
+    .mealhead{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#65756c;margin:16px 0 7px}
+    .entry{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #edf1ed}.entry:last-child{border-bottom:0}
+    .entry-name{font-weight:650;font-size:.9rem;overflow-wrap:anywhere}.entry-meta{font-size:.77rem;color:#68776f;margin-top:3px}.entry-val{text-align:right;font-size:.83rem;white-space:nowrap}
+    .xbtn{border:0;background:transparent;color:#7d8981;font-size:1.15rem;padding:4px 6px}
+    .progressline{height:10px;border-radius:20px;background:#e1e9e3;overflow:hidden;margin:10px 0}.progressline i{display:block;background:#22966a;height:100%;width:0%}
+    .reminder-list{display:grid;gap:8px}.reminder{display:grid;grid-template-columns:1fr 105px auto;gap:8px;align-items:center}
+    .checkline{display:flex;gap:8px;align-items:center;font-size:.9rem}.checkline input{width:auto}
+    .notice{padding:11px 12px;background:#fff8df;border:1px solid #f0df9e;border-radius:12px;color:#6c5814;font-size:.82rem;line-height:1.45}
+    .success{background:#eaf8ef;border-color:#b7e2c5;color:#205c38}
+    .photo-preview{max-width:100%;max-height:220px;object-fit:contain;border-radius:12px;display:none;margin-top:10px;border:1px solid #e2e9e3}
+    .empty{color:#748178;text-align:center;padding:20px 8px;font-size:.9rem}
+    footer{max-width:1050px;margin:0 auto;padding:0 16px 30px;color:#68776f;font-size:.78rem;line-height:1.5}
+    @media(max-width:760px){.span-8,.span-4,.span-6{grid-column:span 12}.wrap{margin-top:14px}.card{padding:15px}.top{padding:18px 16px}.formgrid{grid-template-columns:1fr 1fr}.reminder{grid-template-columns:1fr 92px auto}}
+    @media(max-width:420px){.formgrid{grid-template-columns:1fr}.full{grid-column:auto}.metrics{gap:8px}.metric{padding:11px}.metric strong{font-size:1.35rem}}
+  </style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div><div class="brand">Gain<span>Well</span></div><div class="tag">Eat well. Track progress. Build steadily.</div></div>
+    <button id="enableNotifications" class="btn secondary">Enable reminders</button>
+  </div>
+</header>
+<main class="wrap">
+  <div class="grid">
+    <section class="card span-8">
+      <div class="row between" style="margin-bottom:14px">
+        <div><h2 style="margin-bottom:4px">Today's dashboard</h2><div id="todayLabel" class="muted"></div></div>
+        <button id="exportBtn" class="btn outline">Export data</button>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="muted">Calories eaten</span><strong><span id="caloriesTotal">0</span> <small style="font-size:.8rem;font-weight:500">kcal</small></strong><div class="muted"><span id="caloriesTargetLabel">2,300</span> kcal target</div><div class="bar" style="margin-top:10px"><i id="caloriesBar"></i></div></div>
+        <div class="metric"><span class="muted">Protein eaten</span><strong><span id="proteinTotal">0</span> <small style="font-size:.8rem;font-weight:500">g</small></strong><div class="muted">100 g target</div><div class="bar blue" style="margin-top:10px"><i id="proteinBar"></i></div></div>
+      </div>
+      <div class="row between" style="margin-top:16px;gap:12px;flex-wrap:wrap">
+        <div><strong id="remainingCalories">2,300</strong> <span class="muted">kcal remaining</span></div>
+        <div class="muted">Logged foods are saved on this device.</div>
+      </div>
+    </section>
+
+    <section class="card span-4">
+      <h2>Weight goal</h2>
+      <div class="row between"><div><div class="muted">Current weight</div><div style="font-size:1.65rem;font-weight:800"><span id="currentWeightLabel">55.5</span> kg</div></div><div><div class="muted">Goal</div><div style="font-size:1.65rem;font-weight:800">70 kg</div></div></div>
+      <div class="progressline"><i id="weightBar"></i></div>
+      <div class="muted" id="weightRemaining">14.5 kg to goal</div>
+      <div class="field" style="margin-top:14px"><label for="weightInput">Log today's weight (kg)</label><div class="searchrow"><input id="weightInput" type="number" min="20" max="300" step=".1" value="55.5"><button id="saveWeight" class="btn">Save</button></div></div>
+      <div id="weightHistory" class="small" style="margin-top:10px">No weight history yet.</div>
+    </section>
+
+    <section class="card span-6">
+      <h2>Find and add food</h2>
+      <p class="muted" style="margin-top:-7px">Search common foods, then choose a portion. Values are estimates.</p>
+      <div class="searchrow"><input id="foodSearch" type="search" placeholder="Search e.g. roti, dal, banana" aria-label="Search foods"><button id="clearSearch" class="btn outline">Clear</button></div>
+      <div id="foodResults" class="food-results"></div>
+      <div class="formgrid" style="margin-top:14px">
+        <div class="field full"><label for="mealSelect">Meal</label><select id="mealSelect"><option>Breakfast</option><option>Morning snack</option><option>Lunch</option><option>Evening snack</option><option>Dinner</option><option>Other</option></select></div>
+        <div class="field"><label for="portionInput">Portions</label><input id="portionInput" type="number" min=".1" step=".1" value="1"></div>
+        <div class="field"><label>Selected food</label><input id="selectedFoodLabel" value="2 boiled eggs" readonly></div>
+        <div class="field"><label for="customCalories">Calories per portion</label><input id="customCalories" type="number" min="0" step="1" value="156"></div>
+        <div class="field"><label for="customProtein">Protein per portion (g)</label><input id="customProtein" type="number" min="0" step=".1" value="12.6"></div>
+        <div class="field full"><button id="addFood" class="btn" style="width:100%">+ Add to today's diary</button></div>
+      </div>
+    </section>
+
+    <section class="card span-6">
+      <h2>Log from a food photo</h2>
+      <p class="muted" style="margin-top:-7px">Choose or take a photo, then confirm the food and portion. This version does not automatically identify food from the image.</p>
+      <div class="field"><label for="photoInput">Take or choose a meal photo</label><input id="photoInput" type="file" accept="image/*" capture="environment"></div>
+      <img id="photoPreview" class="photo-preview" alt="Selected meal preview">
+      <div class="formgrid" style="margin-top:12px">
+        <div class="field"><label for="photoFoodName">Food / meal name</label><input id="photoFoodName" placeholder="e.g. paneer rice bowl"></div>
+        <div class="field"><label for="photoMeal">Meal</label><select id="photoMeal"><option>Breakfast</option><option>Morning snack</option><option>Lunch</option><option>Evening snack</option><option>Dinner</option><option>Other</option></select></div>
+        <div class="field"><label for="photoCalories">Estimated calories</label><input id="photoCalories" type="number" min="0" placeholder="e.g. 500"></div>
+        <div class="field"><label for="photoProtein">Estimated protein (g)</label><input id="photoProtein" type="number" min="0" step=".1" placeholder="e.g. 20"></div>
+        <div class="field full"><button id="addPhotoMeal" class="btn secondary" style="width:100%">Add photo meal to diary</button></div>
+      </div>
+      <div class="small" style="margin-top:8px">Photo is processed in your browser for preview and is not uploaded by this app. A future AI integration could suggest estimates, which you should confirm.</div>
+    </section>
+
+    <section class="card span-8">
+      <div class="row between"><h2>Today's food diary</h2><button id="clearDay" class="btn danger">Clear today's log</button></div>
+      <div id="diary"><div class="empty">No foods logged yet. Search for a food above to get started.</div></div>
+    </section>
+
+    <section class="card span-4">
+      <h2>Meal reminders</h2>
+      <p class="muted" style="margin-top:-7px">Notifications work only when the browser/device permits them. Browser alarms are not guaranteed if the app is closed.</p>
+      <div id="reminders" class="reminder-list"></div>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button id="saveReminders" class="btn">Save schedule</button>
+        <button id="testReminder" class="btn outline">Test notification</button>
+      </div>
+      <div id="notificationStatus" class="small" style="margin-top:10px">Notifications not enabled.</div>
+    </section>
+  </div>
+</main>
+<footer>
+  <strong>Privacy:</strong> Food logs, weight history and reminder settings are stored locally in this browser. They are not synced to other devices automatically. Export a backup regularly. Food nutrition values are estimates, not medical advice. For reliable scheduled notifications when the app is fully closed, a server-backed push notification service is needed.
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
