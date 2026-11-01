@@ -1,6 +1,6 @@
 # GainWell Calorie Tracker
 
-A mobile-friendly Progressive Web App (PWA) for calorie/protein tracking, meal reminders, food photo notes, and weight-gain progress.
+A mobile-friendly Progressive Web App (PWA) for calorie/protein tracking, meal reminders, food photo notes, weight-gain progress, and a six-day home workout tracker.
 
 ## Features
 - Daily food diary with calories and protein totals
@@ -9,6 +9,8 @@ A mobile-friendly Progressive Web App (PWA) for calorie/protein tracking, meal r
 - Meal categories
 - Food photo preview and photo-linked manual nutrition logging
 - Daily weight log and progress toward 70 kg
+- Six-day bodyweight workout plan with a weekly split
+- Daily exercise completion checklist and workout history
 - Meal reminder schedule and browser notifications
 - Local persistence using `localStorage`
 - Export data as JSON backup
@@ -73,3 +75,8 @@ goalWeight: 70,
 ```
 
 For a production app, consider user accounts, cloud sync, an authoritative nutrition database, stronger privacy controls, and server-scheduled web push.
+
+
+## Workout tracker
+
+The workout tab includes a six-day beginner bodyweight split (Monday to Saturday) and Sunday recovery. Tick exercises as you complete them; checkmarks and workout history are saved in the same local browser storage as your nutrition data. The workout tracker records exercise completion, not verified repetitions or sets. Start with two sets per exercise and progress gradually. Back/biceps work is limited without pulling equipment; a safely loaded backpack or resistance band can add useful pulling resistance later.

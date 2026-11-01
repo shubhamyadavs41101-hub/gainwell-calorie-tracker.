@@ -36,7 +36,7 @@
   ];
   const defaults = {
     calorieTarget:2300, proteinTarget:100, currentWeight:55.5, goalWeight:70,
-    entries:{}, weights:[], reminders:[
+    entries:{}, weights:[], workoutLogs:{}, reminders:[
       {label:"Breakfast",time:"08:00",enabled:true},
       {label:"Morning snack",time:"11:00",enabled:true},
       {label:"Lunch",time:"13:30",enabled:true},
@@ -48,6 +48,110 @@
   let selectedFood = foodDB[0];
   let photoDataUrl = null;
   let alarmTimer = null;
+
+  // Six-day, equipment-free starter programme. Day 0 is recovery.
+  const workoutPlan = [
+    {name:"Sunday — Recovery",focus:"Rest and recover",minutes:"Rest",description:"Take a rest day. Gentle walking or comfortable stretching is optional.",exercises:[]},
+    {name:"Monday — Chest & triceps",focus:"Upper-body pushing",minutes:"30–45",description:"Use a comfortable push-up variation and keep each repetition controlled.",exercises:[
+      ["Push-ups","2–3 sets × 6–12 reps"],
+      ["Knee push-ups","2–3 sets × 8–12 reps"],
+      ["Close-grip knee or standard push-ups","2 sets × 6–10 reps"],
+      ["Plank","2–3 sets × 20–40 seconds"]
+    ]},
+    {name:"Tuesday — Legs & glutes",focus:"Lower-body strength",minutes:"30–45",description:"Move slowly and keep your knees tracking in line with your toes.",exercises:[
+      ["Bodyweight squats","2–3 sets × 10–15 reps"],
+      ["Reverse lunges","2–3 sets × 8–10 each leg"],
+      ["Glute bridges","2–3 sets × 12–15 reps"],
+      ["Calf raises","2–3 sets × 15–20 reps"],
+      ["Wall sit","2 sets × 20–40 seconds"]
+    ]},
+    {name:"Wednesday — Back & biceps",focus:"Back and arm control",minutes:"30–40",description:"Back and biceps are harder to load without pulling equipment. These are light starter drills, not a full substitute for rows or pull-ups.",exercises:[
+      ["Prone Y raises","2–3 sets × 10–12 reps"],
+      ["Reverse snow angels","2–3 sets × 10–12 reps"],
+      ["Superman hold","2 sets × 15–25 seconds"],
+      ["Self-resisted biceps curls","2 sets × 10–12 each arm"],
+      ["Self-resisted rows","2 sets × 10 each arm"]
+    ]},
+    {name:"Thursday — Shoulders & core",focus:"Shoulder stability and core",minutes:"30–40",description:"Choose an easier pike-push-up angle or skip it if it causes shoulder discomfort.",exercises:[
+      ["Pike push-ups","2–3 sets × 5–10 reps"],
+      ["Shoulder taps","2 sets × 8–12 each side"],
+      ["Bird dogs","2–3 sets × 10 each side"],
+      ["Side plank","2 sets × 15–30 seconds each side"],
+      ["Dead bugs","2–3 sets × 8–10 each side"]
+    ]},
+    {name:"Friday — Legs & glutes",focus:"Single-leg strength",minutes:"30–45",description:"Use a stable stance and hold a wall lightly for balance if needed.",exercises:[
+      ["Split squats","2–3 sets × 8–10 each leg"],
+      ["Single-leg glute bridges","2 sets × 8–10 each leg"],
+      ["Bodyweight good mornings","2–3 sets × 12–15 reps"],
+      ["Calf raises","2–3 sets × 15–20 reps"],
+      ["Wall sit","2 sets × 20–40 seconds"]
+    ]},
+    {name:"Saturday — Full body",focus:"Practise the main movements",minutes:"30–40",description:"Keep this session moderate rather than turning it into an exhausting test.",exercises:[
+      ["Push-ups","2 sets × 6–12 reps"],
+      ["Bodyweight squats","2 sets × 12–15 reps"],
+      ["Reverse lunges","2 sets × 8 each leg"],
+      ["Glute bridges","2 sets × 12–15 reps"],
+      ["Plank","2 sets × 20–40 seconds"]
+    ]}
+  ];
+  let selectedWorkoutDay = new Date().getDay();
+  function workoutDateKey(date=new Date()){
+    const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,"0"),d=String(date.getDate()).padStart(2,"0");
+    return `${y}-${m}-${d}`;
+  }
+  function workoutLogFor(dateKey=workoutDateKey()){
+    return state.workoutLogs[dateKey] || {day:new Date(dateKey+"T12:00:00").getDay(),done:[]};
+  }
+  function saveWorkoutCheck(day,index,checked){
+    const key=workoutDateKey(), log=workoutLogFor(key);
+    log.day=day;
+    const done=new Set(log.done||[]);
+    checked?done.add(index):done.delete(index);
+    log.done=[...done];
+    state.workoutLogs[key]=log;
+    saveState();
+    renderWorkout();
+  }
+  function renderWorkout(){
+    const tabs=$("workoutDayTabs");
+    if(!tabs)return;
+    tabs.innerHTML=workoutPlan.map((day,i)=>`<button type="button" class="workout-day ${i===selectedWorkoutDay?"active":""}" data-workout-day="${i}">${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i]}</button>`).join("");
+    tabs.querySelectorAll("[data-workout-day]").forEach(btn=>btn.addEventListener("click",()=>{
+      selectedWorkoutDay=Number(btn.dataset.workoutDay);renderWorkout();
+    }));
+    const plan=workoutPlan[selectedWorkoutDay], key=workoutDateKey(), log=workoutLogFor(key);
+    const isToday=selectedWorkoutDay===new Date().getDay();
+    $("workoutTodayLabel").textContent=isToday?"Today's plan":"Selected day";
+    $("workoutDayTitle").textContent=plan.name;
+    $("workoutDayDescription").textContent=plan.description;
+    $("workoutMinutes").textContent=plan.minutes;
+    const host=$("workoutExercises");
+    if(!plan.exercises.length){
+      host.innerHTML='<div class="empty">Rest day. Recovery is part of building muscle.</div>';
+    } else {
+      const selectedLog = isToday ? log : {done:[]};
+      host.innerHTML=plan.exercises.map((ex,i)=>`<div class="exercise"><div><strong>${escapeHtml(ex[0])}</strong><small>${escapeHtml(ex[1])}</small></div><label class="exercise-done"><input type="checkbox" data-workout-check="${i}" ${selectedLog.done.includes(i)?"checked":""} ${isToday?"":"disabled"}> Done</label></div>`).join("");
+      host.querySelectorAll("[data-workout-check]").forEach(box=>box.addEventListener("change",()=>saveWorkoutCheck(selectedWorkoutDay,Number(box.dataset.workoutCheck),box.checked)));
+    }
+    const count=isToday?(log.done||[]).length:0;
+    $("workoutDoneCount").textContent=`${count}/${plan.exercises.length}`;
+    $("workoutCompletionMessage").textContent=!isToday?"Choose today to record your completed exercises.":plan.exercises.length&&count===plan.exercises.length?"All exercises completed — great work!": "Tick exercises as you complete them. Your progress saves on this device.";
+    $("resetWorkoutDay").disabled=!isToday || !(log.done||[]).length;
+    const now=new Date(), mondayOffset=(now.getDay()+6)%7;
+    const weekStart=new Date(now);weekStart.setDate(now.getDate()-mondayOffset);weekStart.setHours(0,0,0,0);
+    let completed=0;
+    for(let i=0;i<6;i++){
+      const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);
+      const dayLog=state.workoutLogs[workoutDateKey(d)];
+      if(dayLog && dayLog.done && dayLog.done.length>0)completed++;
+    }
+    $("workoutWeekCount").textContent=`${completed}/6`;
+    const history=Object.entries(state.workoutLogs).filter(([date,l])=>l.done&&l.done.length).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8);
+    $("workoutHistory").innerHTML=history.length?history.map(([date,l])=>{
+      const p=workoutPlan[l.day]||workoutPlan[0];
+      return `<div class="history-item"><span><strong>${escapeHtml(p.name.replace(/^.*— /,""))}</strong><br><span class="small">${escapeHtml(date)}</span></span><span>${l.done.length}/${p.exercises.length} done</span></div>`;
+    }).join(""):'<div class="empty">No workouts completed yet. Tick your first exercise to start tracking.</div>';
+  }
 
   function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
   function loadState(){
@@ -82,6 +186,7 @@
     renderDiary(entries);
     renderFoodResults($("foodSearch").value);
     renderReminders();
+    renderWorkout();
     updateNotificationStatus();
   }
   function renderDiary(entries){
@@ -194,6 +299,12 @@
     saveState();render();
   });
   $("exportBtn").addEventListener("click",exportData);
+  $("resetWorkoutDay").addEventListener("click",()=>{
+    if(selectedWorkoutDay!==new Date().getDay())return;
+    if(confirm("Clear today's workout checkmarks?")){
+      delete state.workoutLogs[workoutDateKey()];saveState();renderWorkout();
+    }
+  });
   $("photoInput").addEventListener("change",e=>{
     const file=e.target.files&&e.target.files[0];if(!file)return;
     if(!file.type.startsWith("image/")){alert("Please choose an image file.");return;}
